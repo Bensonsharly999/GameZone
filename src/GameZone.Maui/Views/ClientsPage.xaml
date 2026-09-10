@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="GameZone.Maui.Views.ClientsPage"
+             Title="Clients">
+    <Grid RowDefinitions="Auto,Auto,*,Auto" Padding="16" RowSpacing="10">
+        <Entry Grid.Row="0" Placeholder="Search name or phone" Text="{Binding Search}" Completed="OnSearchCompleted" />
+        <Label Grid.Row="1" Text="{Binding Error}" TextColor="{StaticResource Danger}" />
+        <CollectionView Grid.Row="2" ItemsSource="{Binding Clients}">
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <Border BackgroundColor="{StaticResource Card}" Stroke="{StaticResource Border}" Padding="14" Margin="0,0,0,10" StrokeShape="RoundRectangle 12">
+                        <VerticalStackLayout Spacing="4">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <VerticalStackLayout Grid.Column="0" Spacing="2">
+                                    <Label Text="{Binding Name}" FontAttributes="Bold" FontSize="16" />
+                                    <Label Text="{Binding PhoneNumber}" TextColor="{StaticResource Muted}" />
+                                </VerticalStackLayout>
+                                <HorizontalStackLayout Grid.Column="1" Spacing="8">
+                                    <VerticalStackLayout>
+                                        <Label Text="{Binding TotalVisitCount}" FontAttributes="Bold" TextColor="{StaticResource Accent}" HorizontalTextAlignment="Center" />
+                                        <Label Text="Visits" FontSize="11" TextColor="{StaticResource Muted}" />
+                                    </VerticalStackLayout>
+                                    <VerticalStackLayout>
+                                        <Label Text="{Binding FreeUseCount}" FontAttributes="Bold" TextColor="{StaticResource Accent}" HorizontalTextAlignment="Center" />
+                                        <Label Text="Free" FontSize="11" TextColor="{StaticResource Muted}" />
+                                    </VerticalStackLayout>
+                                </HorizontalStackLayout>
+                            </Grid>
+                            <HorizontalStackLayout Spacing="8">
+                                <Button Text="Edit" Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.EditCommand}" CommandParameter="{Binding .}" HeightRequest="40" Style="{StaticResource GhostButton}" />
+                                <Button Text="History" Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.HistoryCommand}" CommandParameter="{Binding .}" HeightRequest="40" Style="{StaticResource GhostButton}" />
+                                <Button Text="Delete" Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.DeleteCommand}" CommandParameter="{Binding .}" HeightRequest="40" Style="{StaticResource GhostButton}" />
+                            </HorizontalStackLayout>
+                        </VerticalStackLayout>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+        <Button Grid.Row="3" Text="Add Client" Command="{Binding AddCommand}" />
+    </Grid>
+</ContentPage>

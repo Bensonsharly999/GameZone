@@ -1,0 +1,16 @@
+services:
+  gamezone:
+    build: .
+    image: gamezone-api:oracle
+    container_name: gamezone
+    ports:
+      - "80:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      GAMEZONE_DATA_DIR: /data
+    volumes:
+      - gamezone-data:/data
+    restart: unless-stopped
+
+volumes:
+  gamezone-data:

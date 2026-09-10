@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="GameZone.Maui.Views.ClientHistoryPage"
+             Title="Client History">
+    <CollectionView ItemsSource="{Binding History.Visits}" Margin="16">
+        <CollectionView.Header>
+            <VerticalStackLayout Margin="0,0,0,12">
+                <Label Text="{Binding History.Client.Name}" FontSize="22" FontAttributes="Bold" />
+                <Label Text="{Binding History.Client.PhoneNumber}" TextColor="{StaticResource Muted}" />
+                <Label Text="{Binding Error}" TextColor="{StaticResource Danger}" />
+            </VerticalStackLayout>
+        </CollectionView.Header>
+        <CollectionView.ItemTemplate>
+            <DataTemplate>
+                <Border BackgroundColor="{StaticResource Card}" Padding="12" Margin="0,0,0,8" StrokeShape="RoundRectangle 10">
+                    <VerticalStackLayout>
+                        <Label Text="{Binding GamingItem}" FontAttributes="Bold" />
+                        <Label Text="{Binding EntryTime, StringFormat='{}{0:dd MMM yyyy hh:mm tt}'}" TextColor="{StaticResource Muted}" FontSize="12" />
+                        <Label Text="{Binding Amount, StringFormat='Rs {0:N2}'}" />
+                    </VerticalStackLayout>
+                </Border>
+            </DataTemplate>
+        </CollectionView.ItemTemplate>
+    </CollectionView>
+</ContentPage>

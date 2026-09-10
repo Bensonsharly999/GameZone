@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="GameZone.Maui.Views.ReportsPage"
+             Title="Reports">
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="12">
+            <Label Text="Last 7 days" FontAttributes="Bold" FontSize="18" />
+            <Label Text="{Binding Error}" TextColor="{StaticResource Danger}" />
+            <CollectionView ItemsSource="{Binding Daily}" HeightRequest="260">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Grid ColumnDefinitions="*,Auto" Padding="0,6">
+                            <Label Text="{Binding Date, StringFormat='{}{0:dd MMM}'}" />
+                            <Label Grid.Column="1" Text="{Binding TotalRevenue, StringFormat='Rs {0:N0}'}" TextColor="{StaticResource Accent}" />
+                        </Grid>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+            <Label Text="Top clients" FontAttributes="Bold" FontSize="18" />
+            <CollectionView ItemsSource="{Binding TopClients}" HeightRequest="260">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Grid ColumnDefinitions="*,Auto" Padding="0,6">
+                            <Label Text="{Binding ClientName}" />
+                            <Label Grid.Column="1" Text="{Binding TotalAmountSpent, StringFormat='Rs {0:N0}'}" />
+                        </Grid>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

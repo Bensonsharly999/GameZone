@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="GameZone.Maui.Views.SettingsPage"
+             Title="Settings">
+    <VerticalStackLayout Padding="20" Spacing="12">
+        <Label Text="{Binding UserName, StringFormat='Signed in as {0}'}" />
+        <Label Text="API URL" TextColor="{StaticResource Muted}" />
+        <Entry Text="{Binding ApiUrl}" Keyboard="Url" />
+        <Label Text="Emulator: http://10.0.2.2:5088. Phone: http://YOUR-PC-IP:5088" TextColor="{StaticResource Muted}" FontSize="12" />
+        <Button Text="Save URL" Command="{Binding SaveCommand}" Style="{StaticResource GhostButton}" />
+        <Label Text="{Binding Status}" TextColor="{StaticResource Accent}" />
+        <Button Text="Logout" Command="{Binding LogoutCommand}" />
+    </VerticalStackLayout>
+</ContentPage>

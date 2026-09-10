@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="GameZone.Maui.Views.LoginPage"
+             Title="Sign in"
+             BackgroundColor="{StaticResource BgDeep}">
+    <ScrollView>
+        <VerticalStackLayout Padding="24" Spacing="12" VerticalOptions="Center">
+            <Label Text="GAMEZONE" TextColor="{StaticResource Accent}" FontAttributes="Bold" />
+            <Label Text="Mobile" FontSize="32" FontAttributes="Bold" />
+            <Label Text="Same shop data for you and your friend." TextColor="{StaticResource Muted}" />
+
+            <Label Text="API URL" TextColor="{StaticResource Muted}" Margin="0,16,0,0" />
+            <Entry Text="{Binding ApiUrl}" Keyboard="Url" />
+            <Label Text="Username" TextColor="{StaticResource Muted}" />
+            <Entry Text="{Binding Username}" />
+            <Label Text="Password" TextColor="{StaticResource Muted}" />
+            <Entry Text="{Binding Password}" IsPassword="True" />
+            <Label Text="{Binding Error}" TextColor="{StaticResource Danger}" />
+            <ActivityIndicator IsRunning="{Binding IsBusy}" Color="{StaticResource Accent}" />
+            <Button Text="Login" Command="{Binding LoginCommand}" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

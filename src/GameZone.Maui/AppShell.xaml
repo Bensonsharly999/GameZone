@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+       xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+       xmlns:views="clr-namespace:GameZone.Maui.Views"
+       x:Class="GameZone.Maui.AppShell"
+       FlyoutBackgroundColor="#101826"
+       Shell.ForegroundColor="#F4F7FB"
+       Shell.BackgroundColor="#101826"
+       Shell.TitleColor="#F4F7FB"
+       Shell.TabBarBackgroundColor="#101826"
+       Shell.TabBarTitleColor="#2EE59D"
+       Shell.TabBarUnselectedColor="#8B9BB4">
+
+    <FlyoutItem Title="Dashboard" Icon="dotnet_bot.png">
+        <ShellContent ContentTemplate="{DataTemplate views:DashboardPage}" Route="dashboard" />
+    </FlyoutItem>
+    <FlyoutItem Title="Sessions">
+        <ShellContent ContentTemplate="{DataTemplate views:SessionsPage}" Route="sessions" />
+    </FlyoutItem>
+    <FlyoutItem Title="Clients">
+        <ShellContent ContentTemplate="{DataTemplate views:ClientsPage}" Route="clients" />
+    </FlyoutItem>
+    <FlyoutItem Title="Today's Clients">
+        <ShellContent ContentTemplate="{DataTemplate views:TodayPage}" Route="today" />
+    </FlyoutItem>
+    <FlyoutItem Title="Payments">
+        <ShellContent ContentTemplate="{DataTemplate views:PaymentsPage}" Route="payments" />
+    </FlyoutItem>
+    <FlyoutItem Title="Gaming Items">
+        <ShellContent ContentTemplate="{DataTemplate views:ItemsPage}" Route="items" />
+    </FlyoutItem>
+    <FlyoutItem Title="Reports">
+        <ShellContent ContentTemplate="{DataTemplate views:ReportsPage}" Route="reports" />
+    </FlyoutItem>
+    <FlyoutItem Title="Users">
+        <ShellContent ContentTemplate="{DataTemplate views:UsersPage}" Route="users" />
+    </FlyoutItem>
+    <FlyoutItem Title="Settings">
+        <ShellContent ContentTemplate="{DataTemplate views:SettingsPage}" Route="settings" />
+    </FlyoutItem>
+</Shell>

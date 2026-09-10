@@ -1,0 +1,12 @@
+**/bin
+**/obj
+**/.vs
+**/.idea
+.git
+.tools
+android-wrapper
+dist
+**/node_modules
+*.user
+*.apk
+*.zip

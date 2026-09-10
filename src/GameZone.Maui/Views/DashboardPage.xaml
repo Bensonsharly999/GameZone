@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="GameZone.Maui.Views.DashboardPage"
+             Title="Dashboard">
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="12">
+            <Label Text="{Binding Greeting}" FontSize="22" FontAttributes="Bold" />
+            <Label Text="Today at the floor" TextColor="{StaticResource Muted}" />
+            <Label Text="{Binding Error}" TextColor="{StaticResource Danger}" />
+            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="10">
+                <Border Grid.Row="0" Grid.Column="0" BackgroundColor="{StaticResource Card}" Stroke="{StaticResource Border}" Padding="16" StrokeShape="RoundRectangle 12">
+                    <VerticalStackLayout>
+                        <Label Text="Today's clients" TextColor="{StaticResource Muted}" FontSize="12" />
+                        <Label Text="{Binding TodaysClients}" FontSize="28" FontAttributes="Bold" />
+                    </VerticalStackLayout>
+                </Border>
+                <Border Grid.Row="0" Grid.Column="1" BackgroundColor="{StaticResource Card}" Stroke="{StaticResource Border}" Padding="16" StrokeShape="RoundRectangle 12">
+                    <VerticalStackLayout>
+                        <Label Text="Active sessions" TextColor="{StaticResource Muted}" FontSize="12" />
+                        <Label Text="{Binding ActiveSessions}" FontSize="28" FontAttributes="Bold" TextColor="{StaticResource Accent}" />
+                    </VerticalStackLayout>
+                </Border>
+                <Border Grid.Row="1" Grid.Column="0" BackgroundColor="{StaticResource Card}" Stroke="{StaticResource Border}" Padding="16" StrokeShape="RoundRectangle 12">
+                    <VerticalStackLayout>
+                        <Label Text="Today's total" TextColor="{StaticResource Muted}" FontSize="12" />
+                        <Label Text="{Binding TodaysRevenue, StringFormat='Rs {0:N2}'}" FontSize="20" FontAttributes="Bold" />
+                    </VerticalStackLayout>
+                </Border>
+                <Border Grid.Row="1" Grid.Column="1" BackgroundColor="{StaticResource Card}" Stroke="{StaticResource Border}" Padding="16" StrokeShape="RoundRectangle 12">
+                    <VerticalStackLayout>
+                        <Label Text="Pending" TextColor="{StaticResource Muted}" FontSize="12" />
+                        <Label Text="{Binding PendingPayments}" FontSize="28" FontAttributes="Bold" TextColor="{StaticResource Danger}" />
+                    </VerticalStackLayout>
+                </Border>
+            </Grid>
+            <Border BackgroundColor="{StaticResource Card}" Stroke="{StaticResource Border}" Padding="16" StrokeShape="RoundRectangle 12"
+                    IsVisible="{Binding IsAdmin}">
+                <VerticalStackLayout>
+                    <Label Text="This month" TextColor="{StaticResource Muted}" FontSize="12" />
+                    <Label Text="{Binding MonthLabel}" TextColor="{StaticResource Muted}" FontSize="12" />
+                    <Label Text="{Binding MonthlyRevenue, StringFormat='Rs {0:N2}'}" FontSize="24" FontAttributes="Bold" TextColor="{StaticResource Accent}" />
+                </VerticalStackLayout>
+            </Border>
+            <Button Text="Refresh" Command="{Binding LoadCommand}" Style="{StaticResource GhostButton}" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

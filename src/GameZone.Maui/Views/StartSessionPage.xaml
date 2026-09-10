@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="GameZone.Maui.Views.StartSessionPage"
+             Title="Start Session">
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="10">
+            <Label Text="Search client" TextColor="{StaticResource Muted}" />
+            <Entry Text="{Binding Search}" Completed="OnSearchCompleted" />
+            <Label Text="Client" TextColor="{StaticResource Muted}" />
+            <Picker ItemsSource="{Binding Clients}" ItemDisplayBinding="{Binding DisplayLabel}" SelectedItem="{Binding SelectedClient}" />
+            <Label Text="Gaming item" TextColor="{StaticResource Muted}" />
+            <Picker ItemsSource="{Binding Items}" ItemDisplayBinding="{Binding DisplayLabel}" SelectedItem="{Binding SelectedItem}" />
+            <Label Text="Players on this machine" TextColor="{StaticResource Muted}" />
+            <Picker ItemsSource="{Binding PlayerCounts}" SelectedItem="{Binding PlayerCount}" />
+            <Label Text="Notes" TextColor="{StaticResource Muted}" />
+            <Editor Text="{Binding Notes}" HeightRequest="80" />
+            <Label Text="{Binding Error}" TextColor="{StaticResource Danger}" />
+            <Button Text="Start Session" Command="{Binding StartCommand}" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

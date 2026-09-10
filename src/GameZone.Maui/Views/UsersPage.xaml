@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="GameZone.Maui.Views.UsersPage"
+             Title="User Management">
+    <Grid RowDefinitions="Auto,*" Padding="16" RowSpacing="10">
+        <VerticalStackLayout Spacing="8">
+            <Entry Placeholder="Name" Text="{Binding Name}" />
+            <Entry Placeholder="Username" Text="{Binding Username}" />
+            <Entry Placeholder="Password (new users)" Text="{Binding Password}" IsPassword="True" />
+            <Picker Title="Role" ItemsSource="{Binding Roles}" SelectedItem="{Binding Role}" />
+            <Button Text="Save user" Command="{Binding SaveCommand}" />
+            <Label Text="{Binding Error}" TextColor="{StaticResource Danger}" />
+            <Label Text="{Binding Status}" TextColor="{StaticResource Accent}" />
+        </VerticalStackLayout>
+        <CollectionView Grid.Row="1" ItemsSource="{Binding Users}">
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <Border BackgroundColor="{StaticResource Card}" Padding="12" Margin="0,0,0,8" StrokeShape="RoundRectangle 10">
+                        <VerticalStackLayout Spacing="6">
+                            <Label Text="{Binding Name}" FontAttributes="Bold" />
+                            <Label Text="{Binding Username}" TextColor="{StaticResource Muted}" />
+                            <Label Text="{Binding RoleText}" TextColor="{StaticResource Accent}" />
+                            <Label Text="{Binding StatusText}" TextColor="{StaticResource Muted}" />
+                            <HorizontalStackLayout Spacing="6">
+                                <Button Text="Edit" Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.EditCommand}" CommandParameter="{Binding .}" HeightRequest="40" Style="{StaticResource GhostButton}" />
+                                <Button Text="On/Off" Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.ToggleCommand}" CommandParameter="{Binding .}" HeightRequest="40" Style="{StaticResource GhostButton}" />
+                                <Button Text="Reset" Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.ResetCommand}" CommandParameter="{Binding .}" HeightRequest="40" Style="{StaticResource GhostButton}" />
+                            </HorizontalStackLayout>
+                        </VerticalStackLayout>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </Grid>
+</ContentPage>

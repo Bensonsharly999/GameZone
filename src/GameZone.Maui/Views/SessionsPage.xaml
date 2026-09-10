@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="GameZone.Maui.Views.SessionsPage"
+             Title="Active Sessions">
+    <Grid RowDefinitions="Auto,*,Auto" Padding="16" RowSpacing="12">
+        <Label Grid.Row="0" Text="{Binding Error}" TextColor="{StaticResource Danger}" />
+        <CollectionView Grid.Row="1" ItemsSource="{Binding Sessions}">
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <Border BackgroundColor="{StaticResource Card}" Stroke="{StaticResource Border}" Padding="14" Margin="0,0,0,10" StrokeShape="RoundRectangle 12">
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="{Binding ClientName}" FontAttributes="Bold" FontSize="16" />
+                            <Label Text="{Binding GamingItemName}" TextColor="{StaticResource Accent}" />
+                            <Label Text="{Binding EntryTime, StringFormat='Started {0:dd MMM hh:mm tt}'}" TextColor="{StaticResource Muted}" FontSize="12" />
+                            <Button Text="End Session" Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.EndCommand}" CommandParameter="{Binding .}" HeightRequest="40" />
+                        </VerticalStackLayout>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+        <Button Grid.Row="2" Text="Start Session" Command="{Binding StartCommand}" />
+    </Grid>
+</ContentPage>

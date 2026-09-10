@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="GameZone.Maui.Views.EndSessionPage"
+             Title="End Session">
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="10">
+            <Button Text="Calculate and end" Command="{Binding EndCommand}" />
+            <Label Text="{Binding Result.Session.ClientName}" FontSize="20" FontAttributes="Bold" />
+            <Label Text="{Binding Result.Amount, StringFormat='Amount  Rs {0:N2}'}" TextColor="{StaticResource Accent}" FontSize="18" />
+            <Label Text="Payment method" TextColor="{StaticResource Muted}" />
+            <Picker ItemsSource="{Binding Methods}" SelectedItem="{Binding Method}" />
+            <Entry Placeholder="UPI / card reference" Text="{Binding Reference}" />
+            <Label Text="{Binding Error}" TextColor="{StaticResource Danger}" />
+            <Button Text="Collect payment" Command="{Binding CollectPaidCommand}" />
+            <Button Text="Mark pending" Command="{Binding CollectPendingCommand}" Style="{StaticResource GhostButton}" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
