@@ -32,15 +32,14 @@ public partial class PaymentFormViewModel : ObservableObject
     [RelayCommand]
     private async Task SaveAsync()
     {
-        decimal amount;
-        if (Method == PaymentMethod.Free)
+        decimal amount = 0;
+        if (Method != PaymentMethod.Free)
         {
-            amount = 0;
-        }
-        else if (!decimal.TryParse(AmountText, out amount) || amount <= 0)
-        {
-            Error = "Enter a valid amount.";
-            return;
+            if (!decimal.TryParse(AmountText, out amount) || amount <= 0)
+            {
+                Error = "Enter a valid amount.";
+                return;
+            }
         }
 
         Error = null;

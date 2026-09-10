@@ -28,7 +28,8 @@ public class SessionService : ISessionService
 
     public async Task<IReadOnlyList<SessionDto>> GetTodaysAsync(CancellationToken cancellationToken = default)
     {
-        var sessions = await _unitOfWork.Sessions.GetTodaysSessionsAsync(DateTime.Today, cancellationToken);
+        var (start, end) = CafeClock.UtcDayRangeIst();
+        var sessions = await _unitOfWork.Sessions.GetByDateRangeAsync(start, end, cancellationToken);
         return sessions
             .OrderByDescending(s => s.EntryTime)
             .Select(s => s.ToDto())
@@ -76,7 +77,7 @@ public class SessionService : ISessionService
         {
             ClientId = request.ClientId,
             GamingItemId = request.GamingItemId,
-            EntryTime = DateTime.Now,
+            EntryTime = CafeClock.UtcNow,
             SessionStatus = SessionStatus.Active,
             Notes = string.IsNullOrWhiteSpace(request.Notes) ? null : request.Notes.Trim(),
             PlayerCount = request.PlayerCount
@@ -97,12 +98,11 @@ public class SessionService : ISessionService
         if (session.SessionStatus != SessionStatus.Active)
             return Result<EndSessionResult>.Success(await ToEndResultAsync(session, cancellationToken));
 
-        var exitTime = DateTime.Now;
-        if (exitTime < session.EntryTime)
-            exitTime = session.EntryTime;
+        var exitTime = CafeClock.UtcNow;
+        if (exitTime < CafeClock.ToUtc(session.EntryTime))
+            exitTime = CafeClock.ToUtc(session.EntryTime);
 
-        var duration = exitTime - session.EntryTime;
-        var durationMinutes = SessionBilling.ToBilledMinutes(duration);
+        var durationMinutes = SessionBilling.ToBilledMinutes(CafeClock.Played(session.EntryTime));
         var rate = session.PlayerCount >= 2
             ? session.GamingItem.RateOneHourTwoPlayers
             : session.GamingItem.RateOneHourOnePlayer;
@@ -127,13 +127,19 @@ public class SessionService : ISessionService
         if (dto.VisitNumber <= 0)
             dto.VisitNumber = visits.Count;
         dto.FreeEligible = PaymentRules.IsLoyaltyFreeVisit(dto.VisitNumber);
+        if (session.SessionStatus == SessionStatus.Active && session.GamingItem is not null)
+        {
+            var billed = SessionBilling.ToBilledMinutes(CafeClock.Played(session.EntryTime));
+            dto.DurationMinutes = billed;
+            dto.Amount = SessionBilling.CalculateAmount(billed, session.GamingItem, session.PlayerCount);
+        }
         return dto;
     }
 
     private async Task<EndSessionResult> ToEndResultAsync(Session session, CancellationToken cancellationToken)
     {
         var billed = session.DurationMinutes
-            ?? SessionBilling.ToBilledMinutes((session.ExitTime ?? DateTime.Now) - session.EntryTime);
+            ?? SessionBilling.ToBilledMinutes(CafeClock.Played(session.EntryTime));
         decimal amount;
         decimal half;
         decimal rate;

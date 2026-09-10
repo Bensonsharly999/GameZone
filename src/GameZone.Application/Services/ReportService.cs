@@ -1,3 +1,4 @@
+using GameZone.Application.Common;
 using GameZone.Application.DTOs.Reports;
 using GameZone.Application.Interfaces;
 using GameZone.Domain.Enums;
@@ -45,8 +46,8 @@ public class ReportService : IReportService
 
     public async Task<IReadOnlyList<RevenueByItemDto>> GetRevenueByItemAsync(DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default)
     {
-        var start = from?.Date ?? DateTime.Today.AddMonths(-1);
-        var end = (to?.Date ?? DateTime.Today).AddDays(1);
+        var start = from?.Date ?? CafeClock.Today.AddMonths(-1);
+        var end = (to?.Date ?? CafeClock.Today).AddDays(1);
         var sessions = await _unitOfWork.Sessions.GetByDateRangeAsync(start, end, cancellationToken);
 
         return sessions

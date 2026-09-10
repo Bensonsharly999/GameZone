@@ -49,7 +49,7 @@ public class SessionsController : ApiControllerBase
         return FromResult(await _paymentService.RecordAsync(new RecordPaymentRequest
         {
             SessionId = id,
-            Amount = request.PaymentMethod == PaymentMethod.Free ? 0 : ended.Value!.Amount,
+            Amount = ended.Value!.Amount,
             PaymentMethod = request.PaymentMethod,
             DiscountPercent = request.DiscountPercent,
             TransactionReference = request.TransactionReference,

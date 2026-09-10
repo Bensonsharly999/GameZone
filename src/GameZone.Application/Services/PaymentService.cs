@@ -41,12 +41,9 @@ public class PaymentService : IPaymentService
         if (existing is not null)
             return Result<PaymentDto>.Success(existing.ToDto());
 
-        if (request.PaymentMethod == PaymentMethod.Free)
-            return await SaveAsync(session, 0, PaymentMethod.Free, PaymentStatus.Paid, request.TransactionReference, cancellationToken);
-
         var billedMinutes = session.DurationMinutes
             ?? (session.SessionStatus == SessionStatus.Active
-                ? SessionBilling.ToBilledMinutes(DateTime.Now - session.EntryTime)
+                ? SessionBilling.ToBilledMinutes(CafeClock.Played(session.EntryTime))
                 : (int?)null);
         if (session.GamingItem is null)
             return Result<PaymentDto>.Failure("Gaming item not found.");
@@ -87,7 +84,7 @@ public class PaymentService : IPaymentService
             PaymentMethod = method,
             TransactionReference = string.IsNullOrWhiteSpace(reference) ? null : reference.Trim(),
             PaymentStatus = status,
-            PaymentDate = DateTime.Now,
+            PaymentDate = CafeClock.UtcNow,
             ReceivedByUserId = _currentUser.User?.Id
         };
 
@@ -104,30 +101,9 @@ public class PaymentService : IPaymentService
         if (payment is null)
             return Result<PaymentDto>.Failure("Payment not found.");
 
-        if (request.PaymentMethod == PaymentMethod.Free)
-        {
-            payment.Amount = 0;
-            payment.PaymentMethod = PaymentMethod.Free;
-            if (payment.Session is not null)
-            {
-                payment.Session.Amount = 0;
-                _unitOfWork.Sessions.Update(payment.Session);
-            }
-            payment.TransactionReference = string.IsNullOrWhiteSpace(request.TransactionReference)
-                ? payment.TransactionReference
-                : request.TransactionReference.Trim();
-            payment.PaymentStatus = PaymentStatus.Paid;
-            payment.PaymentDate = DateTime.Now;
-            payment.ReceivedByUserId = _currentUser.User?.Id;
-            _unitOfWork.Payments.Update(payment);
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
-            var freeUpdated = await _unitOfWork.Payments.GetWithDetailsAsync(payment.Id, cancellationToken);
-            return Result<PaymentDto>.Success((freeUpdated ?? payment).ToDto());
-        }
-
         var billedMinutes = payment.Session?.DurationMinutes
             ?? (payment.Session is { SessionStatus: SessionStatus.Active }
-                ? SessionBilling.ToBilledMinutes(DateTime.Now - payment.Session.EntryTime)
+                ? SessionBilling.ToBilledMinutes(CafeClock.Played(payment.Session.EntryTime))
                 : payment.Session?.DurationMinutes);
         if (payment.Session?.GamingItem is null)
             return Result<PaymentDto>.Failure("Gaming item not found.");
@@ -150,7 +126,7 @@ public class PaymentService : IPaymentService
             ? payment.TransactionReference
             : request.TransactionReference.Trim();
         payment.PaymentStatus = PaymentStatus.Paid;
-        payment.PaymentDate = DateTime.Now;
+        payment.PaymentDate = CafeClock.UtcNow;
         payment.ReceivedByUserId = _currentUser.User?.Id;
 
         _unitOfWork.Payments.Update(payment);

@@ -43,7 +43,12 @@ public static class PaymentRules
             return Result<CheckoutTotals>.Success(new CheckoutTotals(fullAmount, 0));
 
         if (method == PaymentMethod.Free)
-            return Result<CheckoutTotals>.Success(new CheckoutTotals(0, fullAmount));
+        {
+            var freeOff = halfHourAmount > 0 ? halfHourAmount : 80m;
+            var discount = Math.Min(freeOff, fullAmount);
+            var payable = Math.Max(0, fullAmount - discount);
+            return Result<CheckoutTotals>.Success(new CheckoutTotals(payable, discount));
+        }
 
         if (method == PaymentMethod.Discount)
         {

@@ -51,7 +51,7 @@ public class ClientService : IClientService
             Name = dto.Name.Trim(),
             PhoneNumber = phone,
             Address = string.IsNullOrWhiteSpace(dto.Address) ? null : dto.Address.Trim(),
-            CreatedDate = DateTime.Now
+            CreatedDate = CafeClock.UtcNow
         };
 
         await _unitOfWork.Clients.AddAsync(client, cancellationToken);

@@ -49,7 +49,7 @@ public class UserService : IUserService
             PasswordHash = _passwordHasher.Hash(dto.Password),
             Role = dto.Role,
             IsActive = true,
-            CreatedDate = DateTime.Now
+            CreatedDate = CafeClock.UtcNow
         };
 
         await _unitOfWork.Users.AddAsync(user, cancellationToken);

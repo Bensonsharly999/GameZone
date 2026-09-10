@@ -1,5 +1,5 @@
-const CACHE = "gamezone-v23";
-const ASSETS = ["/", "/index.html", "/app.css?v=23", "/app.js?v=23", "/manifest.json", "/icon-192.png", "/icon-512.png"];
+const CACHE = "gamezone-v28";
+const ASSETS = ["/", "/index.html", "/app.css?v=28", "/app.js?v=28", "/manifest.json", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)));

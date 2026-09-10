@@ -1,6 +1,7 @@
 using System.Text;
 using GameZone.Api.Auth;
 using GameZone.Application;
+using GameZone.Application.Common;
 using GameZone.Application.Interfaces;
 using GameZone.Infrastructure;
 using GameZone.Infrastructure.Data;
@@ -17,7 +18,12 @@ builder.Services.AddInfrastructure(connectionString);
 builder.Services.AddApplication();
 builder.Services.AddScoped<ICurrentUserContext, HttpCurrentUserContext>();
 builder.Services.AddSingleton<JwtTokenService>();
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new IstDateTimeJsonConverter());
+        options.JsonSerializerOptions.Converters.Add(new IstNullableDateTimeJsonConverter());
+    });
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy => policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());

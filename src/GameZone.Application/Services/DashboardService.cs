@@ -1,3 +1,4 @@
+using GameZone.Application.Common;
 using GameZone.Application.DTOs.Dashboard;
 using GameZone.Application.Interfaces;
 using GameZone.Domain.Enums;
@@ -16,15 +17,16 @@ public class DashboardService : IDashboardService
 
     public async Task<DashboardStatsDto> GetStatsAsync(CancellationToken cancellationToken = default)
     {
-        var today = DateTime.Today;
-        var monthStart = new DateTime(today.Year, today.Month, 1);
+        var (todayStart, todayEnd) = CafeClock.UtcDayRangeIst();
+        var (monthStart, monthEnd) = CafeClock.UtcMonthRangeIst();
+        var todaysSessions = await _unitOfWork.Sessions.GetByDateRangeAsync(todayStart, todayEnd, cancellationToken);
         return new DashboardStatsDto
         {
-            TodaysClientsCount = await _unitOfWork.Sessions.CountDistinctClientsOnDateAsync(today, cancellationToken),
+            TodaysClientsCount = todaysSessions.Select(s => s.ClientId).Distinct().Count(),
             ActiveSessions = await _unitOfWork.Sessions.CountAsync(s => s.SessionStatus == SessionStatus.Active, cancellationToken),
-            TodaysRevenue = await _unitOfWork.Payments.SumPaidOnDateAsync(today, cancellationToken),
-            MonthlyRevenue = await _unitOfWork.Payments.SumPaidBetweenAsync(monthStart, monthStart.AddMonths(1), cancellationToken),
-            MonthLabel = today.ToString("MMMM yyyy"),
+            TodaysRevenue = await _unitOfWork.Payments.SumPaidBetweenAsync(todayStart, todayEnd, cancellationToken),
+            MonthlyRevenue = await _unitOfWork.Payments.SumPaidBetweenAsync(monthStart, monthEnd, cancellationToken),
+            MonthLabel = CafeClock.Today.ToString("MMMM yyyy"),
             PendingPayments = await _unitOfWork.Payments.CountPendingAsync(cancellationToken)
         };
     }

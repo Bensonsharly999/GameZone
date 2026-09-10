@@ -7,11 +7,18 @@ public static class SessionBilling
     public const int SlotMinutes = 30;
     public const int PaymentGraceMinutes = 5;
 
+    /// <summary>
+    /// 5-minute grace after every 30-minute slot, including each full hour:
+    /// 35m → 30m, 1h05m → 1 hour, 2h05m → 2 hours. Minute 6 after a slot starts the next slot.
+    /// </summary>
     public static int ToBilledMinutes(TimeSpan duration)
     {
         var actualMinutes = Math.Max(0, (int)Math.Ceiling(duration.TotalMinutes));
-        var chargeableMinutes = Math.Max(1, actualMinutes - PaymentGraceMinutes);
-        var slots = (int)Math.Ceiling(chargeableMinutes / (double)SlotMinutes);
+        var leftover = actualMinutes % SlotMinutes;
+        if (leftover > 0 && leftover <= PaymentGraceMinutes)
+            actualMinutes -= leftover;
+
+        var slots = (int)Math.Ceiling(Math.Max(actualMinutes, 1) / (double)SlotMinutes);
         return Math.Max(SlotMinutes, slots * SlotMinutes);
     }
 

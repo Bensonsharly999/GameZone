@@ -1,0 +1,9 @@
+**/bin/
+**/obj/
+**/.vs/
+*.user
+.tools/
+dist/
+android-wrapper/local.properties
+android-wrapper/.gradle/
+android-wrapper/app/build/

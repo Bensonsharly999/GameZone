@@ -37,8 +37,25 @@ function money(value) {
   return `Rs ${Number(value || 0).toFixed(2)}`;
 }
 
+function parseCafeTime(value) {
+  if (!value) return null;
+  const text = String(value);
+  const hasZone = /[zZ]|[+-]\d{2}:?\d{2}$/.test(text);
+  const parsed = new Date(hasZone ? text : `${text}+05:30`);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
 function when(value) {
-  return value ? new Date(value).toLocaleString() : "-";
+  const date = parseCafeTime(value);
+  if (!date) return "-";
+  return date.toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
+    month: "short",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true
+  });
 }
 
 function methodName(id) {
@@ -56,10 +73,13 @@ function slotRates(session, items) {
   let halfRate = Number(twoPlus ? item.rate30MinTwoPlayers : item.rate30MinOnePlayer) || 0;
   if (!(hourRate > 0) && item.ratePerHour > 0) hourRate = Number(item.ratePerHour);
   if (!(halfRate > 0) && hourRate > 0) halfRate = Math.round((hourRate / 2) * 100) / 100;
-  const billed = billedSlotMinutes(session.entryTime);
+  const billed = Number(session.durationMinutes) > 0
+    ? Number(session.durationMinutes)
+    : billedSlotMinutes(session.entryTime);
   const fullHours = Math.floor(billed / 60);
   const extraHalf = billed % 60 >= 30;
-  const full = Math.round(((fullHours * hourRate) + (extraHalf ? halfRate : 0)) * 100) / 100;
+  const computed = Math.round(((fullHours * hourRate) + (extraHalf ? halfRate : 0)) * 100) / 100;
+  const full = Number(session.amount) > 0 ? Number(session.amount) : computed;
   return { full, half: halfRate };
 }
 
@@ -76,8 +96,10 @@ function checkoutMethods() {
 
 function checkoutTotals(method, bill, percent) {
   const pct = Math.max(0, Math.min(100, Number(percent) || 0));
-  if (method === 6)
-    return { amount: 0, discount: bill.full };
+  if (method === 6) {
+    const discount = Math.min(bill.half > 0 ? bill.half : 80, bill.full);
+    return { amount: Math.max(0, Math.round((bill.full - discount) * 100) / 100), discount };
+  }
   if (method === 7) {
     const discount = Math.round(bill.full * pct) / 100;
     return { amount: Math.max(0, Math.round((bill.full - discount) * 100) / 100), discount };
@@ -90,8 +112,10 @@ function paintCheckout(id, session, items) {
   const percentEl = document.getElementById(`pay-pct-${id}`);
   const percentWrap = document.getElementById(`pay-pct-wrap-${id}`);
   const amountWrap = document.getElementById(`pay-amt-wrap-${id}`);
+  const discountWrap = document.getElementById(`pay-disc-wrap-${id}`);
   if (percentWrap) percentWrap.style.display = method === 7 ? "" : "none";
-  if (amountWrap) amountWrap.style.display = method === 6 ? "none" : "";
+  if (amountWrap) amountWrap.style.display = "";
+  if (discountWrap) discountWrap.style.display = method === 6 || method === 7 ? "" : "none";
   const totals = checkoutTotals(method, slotRates(session, items), percentEl?.value);
   const amountEl = document.getElementById(`pay-amt-${id}`);
   const discountEl = document.getElementById(`pay-disc-${id}`);
@@ -100,9 +124,12 @@ function paintCheckout(id, session, items) {
 }
 
 function billedSlotMinutes(entryTime) {
-  const actual = Math.max(0, Math.ceil((Date.now() - new Date(entryTime).getTime()) / 60000));
-  const chargeable = Math.max(1, actual - 5);
-  return Math.max(30, Math.ceil(chargeable / 30) * 30);
+  const started = parseCafeTime(entryTime);
+  let actual = Math.max(0, Math.ceil((Date.now() - (started ? started.getTime() : Date.now())) / 60000));
+  const leftover = actual % 30;
+  if (leftover > 0 && leftover <= 5)
+    actual -= leftover;
+  return Math.max(30, Math.ceil(Math.max(actual, 1) / 30) * 30);
 }
 
 function options(list, valueKey, labelKey, selected) {
@@ -292,8 +319,8 @@ async function renderSessions() {
           <label>Discount %</label>
           <select id="pay-pct-${s.id}">${DISCOUNT_PERCENTS.map(p => `<option value="${p}">${p}%</option>`).join("")}</select>
         </div>
-        <p id="pay-amt-wrap-${s.id}">Amount <span id="pay-amt-${s.id}" class="ok"></span></p>
-        <p>Discount <span id="pay-disc-${s.id}" class="ok"></span></p>
+        <p id="pay-amt-wrap-${s.id}">Payable <span id="pay-amt-${s.id}" class="ok"></span></p>
+        <p id="pay-disc-wrap-${s.id}" style="display:none">Discount <span id="pay-disc-${s.id}" class="ok"></span></p>
         <label>Reference</label>
         <input id="pay-ref-${s.id}" placeholder="UPI / card ref" />
         <div class="row">
@@ -350,7 +377,7 @@ async function renderSessions() {
         })
       });
       const clientName = saved.clientName || session?.clientName || "";
-      state.notice = `${paid ? "Paid" : "Pending"} ${clientName} · Amount ${money(totals.amount)} · Discount ${money(totals.discount)}`;
+      state.notice = `${paid ? "Paid" : "Pending"} ${clientName} · Payable ${money(totals.amount)}${totals.discount ? ` · Discount ${money(totals.discount)}` : ""}`;
       await renderSessions();
       state.notice = "";
     });
