@@ -11,6 +11,7 @@ using Microsoft.IdentityModel.Tokens;
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 var builder = WebApplication.CreateBuilder(args);
+BindRenderPort(builder);
 
 var connectionString = ResolveConnectionString(builder.Configuration);
 
@@ -71,6 +72,13 @@ app.MapFallbackToFile("index.html");
 
 app.Run();
 
+static void BindRenderPort(WebApplicationBuilder builder)
+{
+    var port = Environment.GetEnvironmentVariable("PORT");
+    if (!string.IsNullOrWhiteSpace(port))
+        builder.WebHost.UseUrls($"http://0.0.0.0:{port.Trim()}");
+}
+
 static string ResolveConnectionString(IConfiguration configuration)
 {
     var onRender = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("RENDER"));
@@ -82,21 +90,18 @@ static string ResolveConnectionString(IConfiguration configuration)
     postgres = NormalizePostgres(postgres);
     if (!string.IsNullOrWhiteSpace(postgres))
     {
-        var opened = TryOpenPostgres(postgres, retries: onRender ? 10 : 2);
+        var opened = TryOpenPostgres(postgres, retries: onRender ? 5 : 2);
         if (opened is not null)
         {
             Console.WriteLine("Using PostgreSQL (data is kept across restarts).");
             return opened;
         }
 
-        throw new InvalidOperationException(
-            "DATABASE_URL is set but PostgreSQL did not open. Cafe data is not stored in SQLite on Render, because that file is deleted when the service sleeps.");
+        Console.WriteLine("DATABASE_URL did not open. Falling back to SQLite so the site can start.");
     }
-
-    if (onRender)
+    else if (onRender)
     {
-        throw new InvalidOperationException(
-            "Set DATABASE_URL to a PostgreSQL database (Render Postgres or Neon) so clients, sessions, and payments are not wiped when Render restarts.");
+        Console.WriteLine("WARNING: DATABASE_URL is missing. Render will wipe SQLite when the service sleeps. Add a Postgres DATABASE_URL to keep cafe data.");
     }
 
     var dataDir = configuration["GAMEZONE_DATA_DIR"]
@@ -123,13 +128,21 @@ static string? NormalizePostgres(string? value)
         && !value.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase))
         return EnsureSslPrefer(value);
 
-    var uri = new Uri(value);
-    var userInfo = uri.UserInfo.Split(':', 2);
-    var user = Uri.UnescapeDataString(userInfo[0]);
-    var password = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : "";
-    var database = uri.AbsolutePath.Trim('/');
-    return EnsureSslPrefer(
-        $"Host={uri.Host};Port={(uri.Port > 0 ? uri.Port : 5432)};Database={database};Username={user};Password={password}");
+    try
+    {
+        var uri = new Uri(value);
+        var userInfo = uri.UserInfo.Split(':', 2);
+        var user = Uri.UnescapeDataString(userInfo[0]);
+        var password = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : "";
+        var database = uri.AbsolutePath.Trim('/');
+        return EnsureSslPrefer(
+            $"Host={uri.Host};Port={(uri.Port > 0 ? uri.Port : 5432)};Database={database};Username={user};Password={password}");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Invalid DATABASE_URL: {ex.Message}");
+        return null;
+    }
 }
 
 static string EnsureSslPrefer(string connectionString)
