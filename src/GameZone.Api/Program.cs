@@ -62,21 +62,41 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseMiddleware<CurrentUserMiddleware>();
 app.MapControllers();
-app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
+app.MapGet("/health", () => Results.Ok(new
+{
+    status = "ok",
+    storage = connectionString.Contains("Data Source=", StringComparison.OrdinalIgnoreCase) ? "sqlite" : "postgres"
+}));
 app.MapFallbackToFile("index.html");
 
 app.Run();
 
 static string ResolveConnectionString(IConfiguration configuration)
 {
+    var onRender = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("RENDER"));
     var postgres = configuration["DATABASE_URL"]
-        ?? configuration.GetConnectionString("Postgres")
         ?? Environment.GetEnvironmentVariable("DATABASE_URL");
+    if (string.IsNullOrWhiteSpace(postgres) && !onRender)
+        postgres = configuration.GetConnectionString("Postgres");
+
     postgres = NormalizePostgres(postgres);
-    if (!string.IsNullOrWhiteSpace(postgres) && CanOpenPostgres(postgres))
+    if (!string.IsNullOrWhiteSpace(postgres))
     {
-        Console.WriteLine("Using online PostgreSQL.");
-        return postgres;
+        var opened = TryOpenPostgres(postgres, retries: onRender ? 10 : 2);
+        if (opened is not null)
+        {
+            Console.WriteLine("Using PostgreSQL (data is kept across restarts).");
+            return opened;
+        }
+
+        throw new InvalidOperationException(
+            "DATABASE_URL is set but PostgreSQL did not open. Cafe data is not stored in SQLite on Render, because that file is deleted when the service sleeps.");
+    }
+
+    if (onRender)
+    {
+        throw new InvalidOperationException(
+            "Set DATABASE_URL to a PostgreSQL database (Render Postgres or Neon) so clients, sessions, and payments are not wiped when Render restarts.");
     }
 
     var dataDir = configuration["GAMEZONE_DATA_DIR"]
@@ -90,7 +110,7 @@ static string ResolveConnectionString(IConfiguration configuration)
 
     Directory.CreateDirectory(dataDir);
     var sqlitePath = Path.Combine(dataDir, "GameZone.db");
-    Console.WriteLine($"PostgreSQL is not reachable. Using local SQLite at {sqlitePath}");
+    Console.WriteLine($"Using local SQLite at {sqlitePath}");
     return $"Data Source={sqlitePath}";
 }
 
@@ -101,26 +121,54 @@ static string? NormalizePostgres(string? value)
 
     if (!value.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase)
         && !value.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase))
-        return value;
+        return EnsureSslPrefer(value);
 
     var uri = new Uri(value);
     var userInfo = uri.UserInfo.Split(':', 2);
     var user = Uri.UnescapeDataString(userInfo[0]);
     var password = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : "";
     var database = uri.AbsolutePath.Trim('/');
-    return $"Host={uri.Host};Port={(uri.Port > 0 ? uri.Port : 5432)};Database={database};Username={user};Password={password};SSL Mode=Require;Trust Server Certificate=true";
+    return EnsureSslPrefer(
+        $"Host={uri.Host};Port={(uri.Port > 0 ? uri.Port : 5432)};Database={database};Username={user};Password={password}");
 }
 
-static bool CanOpenPostgres(string connectionString)
+static string EnsureSslPrefer(string connectionString)
 {
-    try
+    if (connectionString.Contains("SSL Mode", StringComparison.OrdinalIgnoreCase)
+        || connectionString.Contains("Ssl Mode", StringComparison.OrdinalIgnoreCase))
+        return connectionString;
+
+    return connectionString.TrimEnd(';') + ";SSL Mode=Prefer;Trust Server Certificate=true";
+}
+
+static string? TryOpenPostgres(string connectionString, int retries)
+{
+    var variants = new[]
     {
-        using var connection = new Npgsql.NpgsqlConnection(connectionString);
-        connection.Open();
-        return true;
-    }
-    catch
+        connectionString,
+        connectionString.Replace("SSL Mode=Require", "SSL Mode=Prefer", StringComparison.OrdinalIgnoreCase),
+        connectionString.Replace("SSL Mode=Prefer", "SSL Mode=Disable", StringComparison.OrdinalIgnoreCase)
+            .Replace("SSL Mode=Require", "SSL Mode=Disable", StringComparison.OrdinalIgnoreCase)
+    }.Distinct(StringComparer.OrdinalIgnoreCase);
+
+    for (var attempt = 1; attempt <= retries; attempt++)
     {
-        return false;
+        foreach (var candidate in variants)
+        {
+            try
+            {
+                using var connection = new Npgsql.NpgsqlConnection(candidate);
+                connection.Open();
+                return candidate;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"PostgreSQL attempt {attempt}: {ex.Message}");
+            }
+        }
+
+        Thread.Sleep(2000);
     }
+
+    return null;
 }

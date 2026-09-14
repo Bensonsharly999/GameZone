@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: gamezone-postgres
+    environment:
+      POSTGRES_DB: gamezone
+      POSTGRES_USER: gamezone
+      POSTGRES_PASSWORD: gamezone
+    ports:
+      - "5432:5432"
+    volumes:
+      - gamezone-pgdata:/var/lib/postgresql/data
+
+volumes:
+  gamezone-pgdata:
