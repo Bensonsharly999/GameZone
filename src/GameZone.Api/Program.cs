@@ -8,6 +8,7 @@ using GameZone.Infrastructure.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 
+LoadDotEnv();
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 var builder = WebApplication.CreateBuilder(args);
@@ -51,9 +52,17 @@ var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetRequiredService<GameZoneDbContext>();
-    var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
-    await DbInitializer.SeedAsync(db, hasher);
+    try
+    {
+        var db = scope.ServiceProvider.GetRequiredService<GameZoneDbContext>();
+        var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
+        await DbInitializer.SeedAsync(db, hasher);
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("Database startup failed: " + ex);
+        throw;
+    }
 }
 
 app.UseCors();
@@ -71,6 +80,32 @@ app.MapGet("/health", () => Results.Ok(new
 app.MapFallbackToFile("index.html");
 
 app.Run();
+
+static void LoadDotEnv()
+{
+    var dir = new DirectoryInfo(Directory.GetCurrentDirectory());
+    for (var i = 0; i < 8 && dir is not null; i++, dir = dir.Parent)
+        ApplyEnvFile(Path.Combine(dir.FullName, ".env"));
+    ApplyEnvFile(Path.Combine(AppContext.BaseDirectory, ".env"));
+}
+
+static void ApplyEnvFile(string path)
+{
+    if (!File.Exists(path))
+        return;
+
+    foreach (var raw in File.ReadAllLines(path))
+    {
+        var line = raw.Trim();
+        if (line.Length == 0 || line.StartsWith('#') || !line.Contains('='))
+            continue;
+        var split = line.Split('=', 2);
+        var key = split[0].Trim();
+        var value = split[1].Trim().Trim('"').Trim('\'');
+        if (!string.IsNullOrEmpty(key) && string.IsNullOrEmpty(Environment.GetEnvironmentVariable(key)))
+            Environment.SetEnvironmentVariable(key, value);
+    }
+}
 
 static void BindRenderPort(WebApplicationBuilder builder)
 {
@@ -90,10 +125,10 @@ static string ResolveConnectionString(IConfiguration configuration)
     postgres = NormalizePostgres(postgres);
     if (!string.IsNullOrWhiteSpace(postgres))
     {
-        var opened = TryOpenPostgres(postgres, retries: onRender ? 5 : 2);
+        var opened = TryOpenPostgres(postgres, retries: onRender ? 8 : 3);
         if (opened is not null)
         {
-            Console.WriteLine("Using PostgreSQL (data is kept across restarts).");
+            Console.WriteLine($"Using PostgreSQL host={HostOf(opened)} (data is kept across restarts).");
             return opened;
         }
 
@@ -126,7 +161,7 @@ static string? NormalizePostgres(string? value)
 
     if (!value.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase)
         && !value.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase))
-        return EnsureSslPrefer(value);
+        return HardenPostgres(value);
 
     try
     {
@@ -135,7 +170,7 @@ static string? NormalizePostgres(string? value)
         var user = Uri.UnescapeDataString(userInfo[0]);
         var password = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : "";
         var database = uri.AbsolutePath.Trim('/');
-        return EnsureSslPrefer(
+        return HardenPostgres(
             $"Host={uri.Host};Port={(uri.Port > 0 ? uri.Port : 5432)};Database={database};Username={user};Password={password}");
     }
     catch (Exception ex)
@@ -145,28 +180,66 @@ static string? NormalizePostgres(string? value)
     }
 }
 
-static string EnsureSslPrefer(string connectionString)
+static string HardenPostgres(string connectionString)
 {
-    if (connectionString.Contains("SSL Mode", StringComparison.OrdinalIgnoreCase)
-        || connectionString.Contains("Ssl Mode", StringComparison.OrdinalIgnoreCase))
-        return connectionString;
+    var parts = connectionString.Trim().TrimEnd(';');
+    if (!ContainsKey(parts, "SSL Mode") && !ContainsKey(parts, "Ssl Mode"))
+        parts += ";SSL Mode=Require";
+    if (!ContainsKey(parts, "Trust Server Certificate"))
+        parts += ";Trust Server Certificate=true";
+    if (!ContainsKey(parts, "Channel Binding"))
+        parts += ";Channel Binding=Disable";
+    if (!ContainsKey(parts, "Timeout"))
+        parts += ";Timeout=30";
+    if (!ContainsKey(parts, "Command Timeout"))
+        parts += ";Command Timeout=60";
+    if (!ContainsKey(parts, "Pooling"))
+        parts += ";Pooling=true";
+    return parts;
+}
 
-    return connectionString.TrimEnd(';') + ";SSL Mode=Prefer;Trust Server Certificate=true";
+static bool ContainsKey(string connectionString, string key)
+    => connectionString.Contains(key + "=", StringComparison.OrdinalIgnoreCase);
+
+static string HostOf(string connectionString)
+{
+    foreach (var part in connectionString.Split(';'))
+    {
+        var kv = part.Split('=', 2);
+        if (kv.Length == 2 && kv[0].Trim().Equals("Host", StringComparison.OrdinalIgnoreCase))
+            return kv[1].Trim();
+    }
+    return "(unknown)";
+}
+
+static string DirectNeonHost(string connectionString)
+{
+    foreach (var part in connectionString.Split(';'))
+    {
+        var kv = part.Split('=', 2);
+        if (kv.Length == 2 && kv[0].Trim().Equals("Host", StringComparison.OrdinalIgnoreCase)
+            && kv[1].Contains("-pooler.", StringComparison.OrdinalIgnoreCase))
+        {
+            var direct = kv[1].Replace("-pooler.", ".", StringComparison.OrdinalIgnoreCase);
+            return connectionString.Replace(kv[1], direct, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+    return connectionString;
 }
 
 static string? TryOpenPostgres(string connectionString, int retries)
 {
-    var variants = new[]
+    var hosts = new List<string> { DirectNeonHost(connectionString), connectionString };
+    var variants = new List<string>();
+    foreach (var host in hosts.Distinct(StringComparer.OrdinalIgnoreCase))
     {
-        connectionString,
-        connectionString.Replace("SSL Mode=Require", "SSL Mode=Prefer", StringComparison.OrdinalIgnoreCase),
-        connectionString.Replace("SSL Mode=Prefer", "SSL Mode=Disable", StringComparison.OrdinalIgnoreCase)
-            .Replace("SSL Mode=Require", "SSL Mode=Disable", StringComparison.OrdinalIgnoreCase)
-    }.Distinct(StringComparer.OrdinalIgnoreCase);
+        variants.Add(host);
+        variants.Add(host.Replace("Pooling=true", "Pooling=false", StringComparison.OrdinalIgnoreCase));
+    }
 
     for (var attempt = 1; attempt <= retries; attempt++)
     {
-        foreach (var candidate in variants)
+        foreach (var candidate in variants.Distinct(StringComparer.OrdinalIgnoreCase))
         {
             try
             {
@@ -176,7 +249,7 @@ static string? TryOpenPostgres(string connectionString, int retries)
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"PostgreSQL attempt {attempt}: {ex.Message}");
+                Console.WriteLine($"PostgreSQL attempt {attempt} ({HostOf(candidate)}): {ex.Message}");
             }
         }
 

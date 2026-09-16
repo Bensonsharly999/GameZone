@@ -18,7 +18,11 @@ public static class DependencyInjection
                 && !connectionString.Contains("Host=", StringComparison.OrdinalIgnoreCase))
                 options.UseSqlite(connectionString);
             else
-                options.UseNpgsql(connectionString);
+                options.UseNpgsql(connectionString, npgsql =>
+                {
+                    npgsql.EnableRetryOnFailure(5, TimeSpan.FromSeconds(5), null);
+                    npgsql.CommandTimeout(60);
+                });
         });
 
         services.AddScoped<IUnitOfWork, UnitOfWork>();

@@ -10,7 +10,14 @@ public static class DbInitializer
     public static async Task SeedAsync(GameZoneDbContext context, IPasswordHasher passwordHasher, CancellationToken cancellationToken = default)
     {
         await context.Database.EnsureCreatedAsync(cancellationToken);
-        await SchemaPatcher.ApplyAsync(context, cancellationToken);
+        try
+        {
+            await SchemaPatcher.ApplyAsync(context, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Schema patch skipped: " + ex.Message);
+        }
 
         if (!await context.Users.AnyAsync(cancellationToken))
         {
