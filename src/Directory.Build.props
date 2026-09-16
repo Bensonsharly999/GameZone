@@ -1,0 +1,6 @@
+<Project>
+  <ItemGroup>
+    <PackageReference Update="Npgsql" Version="9.0.3" />
+    <PackageReference Update="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
+  </ItemGroup>
+</Project>

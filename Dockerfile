@@ -1,12 +1,13 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
+COPY src/Directory.Build.props src/Directory.Build.props
 COPY src/GameZone.Api/GameZone.Api.csproj src/GameZone.Api/
 COPY src/GameZone.Application/GameZone.Application.csproj src/GameZone.Application/
 COPY src/GameZone.Infrastructure/GameZone.Infrastructure.csproj src/GameZone.Infrastructure/
 COPY src/GameZone.Domain/GameZone.Domain.csproj src/GameZone.Domain/
 RUN dotnet restore src/GameZone.Api/GameZone.Api.csproj
 COPY src src
-RUN dotnet publish src/GameZone.Api/GameZone.Api.csproj -c Release -o /app --no-restore
+RUN dotnet publish src/GameZone.Api/GameZone.Api.csproj -c Release -o /app
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app
