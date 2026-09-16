@@ -2,5 +2,6 @@
   <ItemGroup>
     <PackageReference Update="Npgsql" Version="9.0.3" />
     <PackageReference Update="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
+    <PackageReference Update="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.8" />
   </ItemGroup>
 </Project>
